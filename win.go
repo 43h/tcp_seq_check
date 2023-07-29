@@ -94,8 +94,9 @@ func main() {
 		Layout:   VBox{},
 		//拖拽文件处理
 		OnDropFiles: func(files []string) {
-			//showTE.SetText(strings.Join(files, "\r\n"))
-			newwin.Close()
+			if CheckPcap(files[0]) == false {
+				walk.MsgBox(newwin, "错误", "非Pcap文件", walk.MsgBoxIconError)
+			}
 		},
 
 		MenuItems: []MenuItem{
@@ -149,6 +150,11 @@ func main() {
 				Model:         datamodel,
 				StretchFactor: 2,
 				Columns: []TableViewColumn{
+					TableViewColumn{
+						DataMember: "No.",
+						Alignment:  AlignCenter,
+						Width:      128,
+					},
 					TableViewColumn{
 						DataMember: "SrcIP",
 						Alignment:  AlignCenter,
@@ -204,19 +210,4 @@ func main() {
 	}.Create()
 
 	newwin.Run()
-}
-
-// 检测pcap文件
-func checkfile(file string) bool {
-	return true
-}
-
-// 读取并分析文件
-func readfile() {
-
-}
-
-// 解析报文
-func parsepkt() {
-
 }
