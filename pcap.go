@@ -5,7 +5,6 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
-	"log"
 	"path"
 )
 
@@ -30,7 +29,6 @@ type Node struct {
 var PktStat map[PktInfo](*Head)
 
 func init() {
-	log.Println("init hash data")
 	PktStat = make(map[PktInfo]*Head, 1000)
 }
 
@@ -63,14 +61,13 @@ func parsePcap(filename string) (bool, error) {
 	pktInfo := PktInfo{}
 
 	clearTable()
-	num := 0
+
 	var seq uint32
 	var payloadlen int
 	// Loop through packets in file
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	for packet := range packetSource.Packets() {
-		num += 1
-		log.Println("start to parse pkt :", num)
+
 		//check gtp
 		layer := packet.Layers()
 		if len(layer) >= 6 { //包含gtp隧道
@@ -107,12 +104,9 @@ func parsePcap(filename string) (bool, error) {
 }
 
 func statPkt(pkt *PktInfo, seqStart uint32, payloadlen int) {
-	log.Println("stat pkt ", payloadlen)
 	seqEnd := seqStart + uint32(payloadlen)
 	head, ok := PktStat[*pkt]
-	if ok { //已经添加过
-		log.Println("%v", head)
-	} else { //未添加过
+	if !ok { //未添加过
 		node := Node{seqStart, seqEnd, nil}
 		PktStat[*pkt] = &Head{1, &node}
 		return

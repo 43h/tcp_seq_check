@@ -1,9 +1,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
+	"strconv"
 )
 
 const BuildVersion = "  Version:0.0.1\n  Author:cc"
@@ -77,6 +79,61 @@ func (m *DataModel) FlushRows() {
 		i += 1
 	}
 	m.PublishRowsReset()
+}
+
+func (m *DataModel) FilterRows(str string) (bool, error) {
+
+	if len(str) == 0 {
+		if len(m.items) != len(PktStat) {
+			m.FlushRows()
+		}
+		return true, nil
+	}
+
+	var port uint16
+	number, err := strconv.Atoi(str)
+	if err == nil && number > 0 && number < 65536 {
+		port = uint16(number)
+	} else {
+		return false, errors.New("无效过滤条件,目前仅支持端口过滤")
+	}
+
+	var num int32
+	for pktinfo, _ := range PktStat {
+		if port != 0 && port != pktinfo.SrcPort && port != pktinfo.DstPort {
+			continue
+		} else {
+			num += 1
+		}
+	}
+
+	if num == 0 { //无满足条件
+		return false, errors.New("无满足条件流")
+	}
+
+	m.items = make([]*Item, num)
+	i := 0
+	for pktinfo, head := range PktStat {
+		if port != 0 && port != pktinfo.SrcPort && port != pktinfo.DstPort {
+			continue
+		}
+
+		m.items[i] = &Item{
+			index: i,
+			sip:   pktinfo.SrcIP,
+			sport: pktinfo.SrcPort,
+			dip:   pktinfo.DstIP,
+			dport: pktinfo.DstPort,
+			pkt:   head.num,
+		}
+
+		for node := head.list; node != nil; node = node.next {
+			m.items[i].seq += fmt.Sprintf("%d--->%d;", node.seq_s, node.seq_e)
+		}
+		i += 1
+	}
+	m.PublishRowsReset()
+	return true, nil
 }
 
 func (m *DataModel) Value(row, col int) interface{} {
@@ -159,7 +216,10 @@ func main() {
 					PushButton{
 						Text: "过滤",
 						OnClicked: func() {
-							datamodel.ResetRows()
+							rst, err := datamodel.FilterRows(searchTE.Text())
+							if rst == false && err != nil {
+								walk.MsgBox(newwin, "错误", err.Error(), walk.MsgBoxIconError)
+							}
 						},
 					},
 				},
