@@ -74,7 +74,7 @@ func (m *DataModel) FlushRows() {
 		m.items[i].pkt = head.num
 
 		for node := head.list; node != nil; node = node.next {
-			m.items[i].seq += fmt.Sprintf("%d--->%d;", node.seq_s, node.seq_e)
+			m.items[i].seq += fmt.Sprintf("%d--->%d;", node.seqS, node.SeqE)
 		}
 		i += 1
 	}
@@ -128,7 +128,7 @@ func (m *DataModel) FilterRows(str string) (bool, error) {
 		}
 
 		for node := head.list; node != nil; node = node.next {
-			m.items[i].seq += fmt.Sprintf("%d--->%d;", node.seq_s, node.seq_e)
+			m.items[i].seq += fmt.Sprintf("%d--->%d;", node.seqS, node.SeqE)
 		}
 		i += 1
 	}

@@ -21,12 +21,12 @@ type Head struct {
 }
 
 type Node struct {
-	seq_s uint32
-	seq_e uint32
-	next  *Node
+	seqS uint32
+	SeqE uint32
+	next *Node
 }
 
-var PktStat map[PktInfo](*Head)
+var PktStat map[PktInfo]*Head
 
 func init() {
 	PktStat = make(map[PktInfo]*Head, 1000)
@@ -126,41 +126,40 @@ func statPkt(pkt *PktInfo, seqStart uint32, payloadlen int) {
 // 遍历连边插入
 func insert(node *Node, seqS, seqE uint32) *Node {
 	//与节点比较
-	if seqE < node.seq_s { //比第一个节点小，插入后返回
+	if seqE < node.seqS { //比第一个节点小，插入后返回
 		return &Node{seqS, seqE, node}
 	}
 	p1 := node
 	for {
-		if p1.seq_e < seqS {
+		if p1.SeqE < seqS {
 			if p1.next == nil { //无后节点直接，插入最后
 				p1.next = &Node{seqS, seqE, nil}
 				return node
-			} else if seqE < p1.next.seq_s { //插入两个节点中间
+			} else if seqE < p1.next.seqS { //插入两个节点中间
 				p1.next = &Node{seqS, seqE, p1.next}
 				return node
 			} else {
 				p1 = p1.next
 			}
 		} else { //与当前节点重叠或包含
-			if seqS < p1.seq_s {
-				p1.seq_s = seqS
+			if seqS < p1.seqS {
+				p1.seqS = seqS
 			}
-			if seqE > p1.seq_e {
-				p1.seq_e = seqE
+			if seqE > p1.SeqE {
+				p1.SeqE = seqE
 			}
 			return node
 		}
 	}
-	return node
 }
 
 func merge(node *Node) {
 	p1 := node
 	p2 := node.next
 	for p2 != nil {
-		if p1.seq_e >= p2.seq_s { //满足合并条件
-			if p2.seq_e > p1.seq_e {
-				p1.seq_e = p2.seq_e
+		if p1.SeqE >= p2.seqS { //满足合并条件
+			if p2.SeqE > p1.SeqE {
+				p1.SeqE = p2.SeqE
 			}
 			p1.next = p2.next
 			p2.next = nil
