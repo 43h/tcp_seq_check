@@ -1,10 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
-	"log"
-	"math/rand"
 )
 
 const BuildVersion = "  Version:0.0.1\n  Author:cc"
@@ -18,14 +17,13 @@ var tableView *walk.TableView
 var sbi *walk.StatusBarItem
 
 type Item struct {
-	index   int
-	sip     string
-	sport   uint16
-	dip     string
-	dport   uint16
-	pktUp   uint32
-	pktDown uint32
-	seq     string
+	index int
+	sip   string
+	sport uint16
+	dip   string
+	dport uint16
+	pkt   uint32
+	seq   string
 }
 
 type DataModel struct {
@@ -36,7 +34,6 @@ type DataModel struct {
 }
 
 func (m *DataModel) RowCount() int {
-	log.Println("row count")
 	return len(m.items)
 }
 
@@ -48,7 +45,7 @@ func NewDataModel() *DataModel {
 
 func (m *DataModel) ResetRows() {
 	// Create some random data.
-	m.items = make([]*Item, rand.Intn(10))
+	m.items = make([]*Item, 1)
 
 	for i := range m.items {
 		m.items[i] = &Item{
@@ -56,6 +53,29 @@ func (m *DataModel) ResetRows() {
 		}
 	}
 
+	m.PublishRowsReset()
+}
+
+func (m *DataModel) FlushRows() {
+	// Create some random data.
+
+	m.items = make([]*Item, len(PktStat))
+	i := 0
+	for pktinfo, head := range PktStat {
+		m.items[i] = &Item{
+			index: i,
+		}
+		m.items[i].sip = pktinfo.SrcIP
+		m.items[i].sport = pktinfo.SrcPort
+		m.items[i].dip = pktinfo.DstIP
+		m.items[i].dport = pktinfo.DstPort
+		m.items[i].pkt = head.num
+
+		for node := head.list; node != nil; node = node.next {
+			m.items[i].seq += fmt.Sprintf("%d--->%d;", node.seq_s, node.seq_e)
+		}
+		i += 1
+	}
 	m.PublishRowsReset()
 }
 
@@ -74,10 +94,8 @@ func (m *DataModel) Value(row, col int) interface{} {
 	case 4:
 		return item.dport
 	case 5:
-		return item.pktUp
+		return item.pkt
 	case 6:
-		return item.pktDown
-	case 7:
 		return item.seq
 	}
 
@@ -94,9 +112,11 @@ func main() {
 		Layout:   VBox{},
 		//拖拽文件处理
 		OnDropFiles: func(files []string) {
-			if CheckPcap(files[0]) == false {
-				walk.MsgBox(newwin, "错误", "非Pcap文件", walk.MsgBoxIconError)
+			rst, err := HandlePcap(files[0])
+			if rst == false && err != nil {
+				walk.MsgBox(newwin, "错误", err.Error(), walk.MsgBoxIconError)
 			}
+			datamodel.FlushRows()
 		},
 
 		MenuItems: []MenuItem{
@@ -176,19 +196,14 @@ func main() {
 						Width:      128,
 					},
 					TableViewColumn{
-						DataMember: "PKT_UP",
-						Alignment:  AlignCenter,
-						Width:      128,
-					},
-					TableViewColumn{
-						DataMember: "PKT_DOWN",
+						DataMember: "PKT",
 						Alignment:  AlignCenter,
 						Width:      128,
 					},
 					TableViewColumn{
 						DataMember: "Seq",
 						Alignment:  AlignCenter,
-						Width:      100,
+						Width:      500,
 					},
 				},
 			},
