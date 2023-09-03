@@ -5,6 +5,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"golang.org/x/text/encoding/simplifiedchinese"
 	"path"
 )
 
@@ -33,10 +34,12 @@ func init() {
 }
 
 func HandlePcap(filename string) (bool, error) {
-	if path.Ext(filename) != ".pcap" {
+	//中文GBK编码转utf8编码
+	newFilename, _ := simplifiedchinese.GB18030.NewEncoder().Bytes([]byte(filename))
+	if path.Ext(string(newFilename)) != ".pcap" {
 		return false, errors.New("后缀非PCAP格式")
 	} else {
-		return parsePcap(filename)
+		return parsePcap(string(newFilename))
 	}
 }
 

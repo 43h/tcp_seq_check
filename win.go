@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-const BuildVersion = "  Version:0.0.1\n  Author:cc"
+const BuildVersion = "Time:2023-09-03\nVersion:0.0.2\nAuthor:cc"
 
 // 主窗口大小
 const MainWinMinWidth = 600
